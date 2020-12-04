@@ -1,0 +1,42 @@
+
+<%
+const NAME = swaggerData[0].className + "Schema";
+
+function getSpace(num) {
+    if (num <= 0) return "";
+    return new Array(num + 1).join(" ");
+}
+
+// 根据路径树生成api
+function loadPathTree(pathObj, templates = ["{"], level = 1) {
+    for(let pathKey in pathObj) {
+        let path = pathObj[pathKey];
+        if (Array.isArray(path)) {
+            path.forEach(p => {
+                templates.push(`${getSpace(4 * level)}/** ${p.summary} */`);
+                let options = [];
+                if (p.isBodyParameter) {
+                    options.push("isBodyParameter: 1")
+                };
+                options = options.length && `, { ${options.join(",")} }` || "";
+
+                templates.push(`${getSpace(4 * level)}"${p.apiNamex}": ["${p.path}", "${p.method}"${options}],`);
+            })
+        } else {
+            templates.push(`${getSpace(4 * level)}${pathKey}: {`);
+            loadPathTree(path, templates, level + 1);
+        }
+    }
+    templates.push(`${getSpace(4 * level - 1)}}${ level === 1 && ";" || ","}`);
+    return templates.join("\n");
+}
+
+%>
+const <%= NAME %> = {};
+
+<% swaggerData.forEach( swagger => { %>
+    /** <%= swagger.description %> */
+    <%= NAME %>["<%= swagger.namespace %>"] = <%- loadPathTree(swagger.parentGroups) %>
+<% }) %>
+
+export default <%= NAME %>;

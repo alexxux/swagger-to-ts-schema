@@ -1,0 +1,126 @@
+
+<%
+
+const className = swaggerData[0].className;
+function getSpace(num) {
+    if (num <= 0) return "";
+    return new Array(num + 1).join(" ");
+}
+
+function getTextLength(str = "") {
+    var strlen = 0;
+    for (var i = 0; i < str.length; i++) {
+        if (str.charCodeAt(i) > 255) //如果是汉字，则字符串长度加2
+            strlen += 2;
+        else
+            strlen++;
+    }
+    return strlen;
+}
+
+function getPropertityKey(p) {
+    let key = p.name;
+    if (p.optional) key += "?";
+    let description = p.description || "";
+    return `/** ${description} */ ${key}`;
+}
+
+function getPropertityValue(p) {
+    if (p.isRef) {
+        return p.target;
+    }else if (p.isAtomic) {
+        return p.tsType
+    } else if (p.isObject) {
+        return "object"
+    } else if(p.isArray) {
+        // 数组泛型
+        let T = p.elementType.target ? p.elementType.target : p.elementType.tsType;
+        return `Array<${T}>`
+    }
+}
+
+function getPropertity(p, maxLength) {
+    let key = getPropertityKey(p, maxLength);
+    let value = getPropertityValue(p);
+    return `${key}: ${value}`
+}
+
+// 请求参数
+function getApiParam(p) {
+    let paramType = p.tsType.target || p.tsType.tsType;
+
+    if (paramType === "array"){
+        let T = p.tsType.elementType.target ? p.tsType.elementType.target : p.tsType.elementType.tsType
+        paramType = `Array<${T}>`;
+    }
+    let description = p.description || "";
+
+    // 使用驼峰命名
+    let key = p.camelCaseName;
+    // 参数非必须
+    if(!p.required) key += "?";
+    return `/** ${description} */ ${key}: ${paramType}`;
+}
+
+// 根据路径树生成api
+function loadPathTree(pathObj, templates = []) {
+
+    for(let pathKey in pathObj) {
+        let path = pathObj[pathKey];
+        // 递归遍历路径树，api会存放在items数组里
+        if (Array.isArray(path)) {
+            // 在命名空间内填充api，在根路径不补命名空间
+            let namespace = path[0].parentPath && path[0].parentPath.split("/").join(".");
+            let namespaceTmp = namespace && [`${getSpace(8)}namespace ${namespace} {`] || [];
+            path.forEach(api => {
+
+                // api描述
+                namespaceTmp.push(`${getSpace(8)}/** ${api.summary} */`);
+
+                if (api.isBodyParameter) {
+                    namespaceTmp.push(`${getSpace(8)}function ${api.apiNamex} (`);
+
+                    let len = api.parameters.length - 1;
+                    api.parameters.forEach((param, index) => {
+                        namespaceTmp.push(`${getSpace(16)}${getApiParam(param)}${len === index ? "" : ","}`);
+                    });
+                    namespaceTmp.push(`${getSpace(8)}): Promise <${api.response}>`);
+                    namespaceTmp.push(`${getSpace(4)}`)
+                } else {
+                    namespaceTmp.push(`${getSpace(8)}function ${api.apiNamex} ( params : {`);
+
+                    api.parameters.forEach(param => {
+                        namespaceTmp.push(`${getSpace(16)}${getApiParam(param)}`);
+                    });
+                    namespaceTmp.push(`${getSpace(8)}}): Promise <${api.response}>`);
+                    namespaceTmp.push(`${getSpace(4)}`)
+                }
+            })
+            namespace && namespaceTmp.push(`${getSpace(2)}}`)
+            templates.push(namespaceTmp.join("\n"));
+        } else {
+            loadPathTree(path, templates);
+        }
+    }
+    return templates.join("\n\n\n");
+}
+%>
+
+declare namespace <%= className %> {}
+
+<% swaggerData.forEach( swagger => { %>
+/** <%= swagger.description %> */
+declare namespace <%= className %>.<%= swagger.namespace %> {
+
+    // interface
+    <% swagger.definitions.forEach( definition => { %>
+        interface <%= definition.name %> {
+            <% definition.tsType.properties.forEach(propertity => { %><%- getPropertity(propertity) %>
+            <% }) %>
+        }
+    <% }) %>
+
+<%- loadPathTree(swagger.parentGroups) %>
+
+}
+<% }) %>
