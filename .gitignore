@@ -1,0 +1,8 @@
+node_modules
+/dist
+/api.d.ts
+/api.ts
+/api.js
+/api.json
+/swaggerData.json
+/swagger-config.json

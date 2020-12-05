@@ -1,0 +1,42 @@
+
+<%
+    function getTargetFromStrKey(strKey, obj) {
+        if (typeof strKey !== "string") return;
+        if (!strKey) return obj;
+        let target = obj;
+        strKey.split(".").forEach(k => {
+            obj[k] = obj[k] || {};
+            target = obj[k];
+        })
+        return target;
+    }
+
+function getApiFromApis(apis) {
+    if (!Array.isArray(apis)) return;
+    let map = {};
+    apis.forEach(api => {
+        let { parentPath } = api;
+        let target = getTargetFromStrKey(parentPath, map);
+
+        let value = [api.path, api.method];
+        target[api.apiNamex] = value;
+
+        // 参数是否在body里
+        if (api.isBodyParameter) {
+            value[2] = value[2] || {};
+            value[2].isBodyParameter = 1;
+        }
+    })
+    return map;
+}
+
+function loadSwagger(swaggers) {
+    let json = {};
+    swaggers.forEach(swagger => {
+        json[swagger.namespace] = getApiFromApis(swagger.apis);
+    });
+    return JSON.stringify(json)
+}
+
+%>
+<%- loadSwagger(swaggerData) %>

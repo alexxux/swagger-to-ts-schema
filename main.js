@@ -4,6 +4,7 @@ const path = require("path");
 const inquirer = require("inquirer");
 const axios = require("axios");
 const codegen = require("./src/codegen");
+const beautify = require("js-beautify").js;
 
 (async () => {
 
@@ -20,13 +21,19 @@ const codegen = require("./src/codegen");
         output = "./", // 输出的文件路径
         fileName = "api", // 输出的文件名称
         force, // 是否强制覆盖文件
-        debug // debug模式
+        debug, // debug模式
+        schemaType = "json", // 输出的模式
     } = props;
 
     // d.ts模板文件
     const apiDtsTmp = fs.readFileSync(path.resolve(__dirname, "./src/templates/apis.d.ejs"), "utf-8");
-    // ts模板文件
-    const apiTmp = fs.readFileSync(path.resolve(__dirname, "./src/templates/apis.ejs"), "utf-8");
+    // schema模板文件
+    const schemaTmpMap = {
+        json: "./src/templates/apisjson.ejs",
+        js: "./src/templates/apis.ejs",
+    }
+    // const apiTmp = fs.readFileSync(path.resolve(__dirname, "./src/templates/apis.ejs"), "utf-8");
+    const apiTmp = fs.readFileSync(path.resolve(__dirname, schemaTmpMap[schemaType]), "utf-8");
 
     // 补上路径
     output = (output.endsWith("/") && output) || output + "/";
@@ -85,15 +92,15 @@ const codegen = require("./src/codegen");
         const $apiDts = ejs.render(apiDtsTmp, { swaggerData });
         const $api = ejs.render(apiTmp, { swaggerData });
         // 检查文件是否存在
-        await saveFile(`${output}${fileName}.d.ts`, $apiDts, force);
-        await saveFile(`${output}${fileName}.js`, $api, force);
+        await saveFile(`${output}${fileName}.d.ts`, beautify($apiDts), force);
+        await saveFile(`${output}${fileName}.${schemaType}`, beautify($api), force);
 
         if (debug) {
             _info("=== debug模式：输出转译文件 ===");
-            saveFile(`${output}swaggerData.json`, JSON.stringify(swaggerData), force);
+            saveFile(`${output}swaggerData.json`, beautify(JSON.stringify(swaggerData)), force);
         }
     } catch (e) {
-        _error("swagger请求异常", err);
+        _error("swagger请求异常", e);
     }
 
 })();
