@@ -4,15 +4,16 @@
         if (typeof strKey !== "string") return;
         if (!strKey) return obj;
         let target = obj;
-        strKey.split(".").forEach(k => {
-            obj[k] = obj[k] || {};
-            target = obj[k];
+        if (strKey.startsWith("/")) strKey = strKey.substr(1);
+        strKey.split("/").forEach(k => {
+            target[k] = target[k] || {};
+            target = target[k];
         })
         return target;
     }
 
 function getApiFromApis(apis) {
-    if (!Array.isArray(apis)) return;
+    if (!Array.isArray(apis)) return {};
     let map = {};
     apis.forEach(api => {
         let { parentPath } = api;
