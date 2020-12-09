@@ -1,6 +1,6 @@
-"use strict";
-
-var _ = require("lodash");
+const _ = require("lodash");
+const inquirer = require("inquirer");
+const fs = require("fs");
 
 // 奖名称规范化，泛型尖括号和逗号转为下划线
 const normalizeTypeName = function (id) {
@@ -88,7 +88,53 @@ function convertType(swaggerType, swagger) {
     return typespec;
 }
 
+// 根据字符串路径
+function createObjectByStringKey(strKey = "", obj = {}) {
+    let keys = strKey.split(".");
+    let target = obj;
+    keys.forEach((key) => {
+        target[key] = target[key] || {};
+        target = target[key];
+    });
+    return obj;
+}
+
+/* 工具方法 */
+function _error(msg) {
+    console.error(msg);
+}
+
+function _info(msg) {
+    console.log(msg);
+}
+
+// 保存文件，文件存在会提醒
+async function saveFile(filePath, fileData, force) {
+    if (!force && fs.existsSync(filePath)) {
+        let { confirm } = await inquirer.prompt([
+            {
+                name: "confirm",
+                type: "confirm",
+                message: `${filePath}已存在，是否覆盖？`,
+            },
+        ]);
+        if (!confirm) return _info(`${filePath}未保存`);
+    }
+
+
+    try {
+        fs.writeFileSync(filePath, fileData);
+        _info(`${filePath} 保存成功`);
+    } catch (e) {
+        _error("文件保存失败", e);
+    }
+}
+
 module.exports = {
     convertType,
     normalizeTypeName,
+    createObjectByStringKey,
+    _error,
+    _info,
+    saveFile
 };

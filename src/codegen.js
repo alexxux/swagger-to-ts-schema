@@ -374,4 +374,6 @@ const getViewForSwagger = function (opts) {
     return result;
 };
 
-module.exports.getViewForSwagger = getViewForSwagger;
+module.exports = {
+    getViewForSwagger
+};
