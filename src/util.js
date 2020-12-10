@@ -101,11 +101,11 @@ function createObjectByStringKey(strKey = "", obj = {}) {
 
 /* 工具方法 */
 function _error(msg) {
-    console.error(msg);
+    console.error('\x1b[91m', msg);
 }
 
 function _info(msg) {
-    console.log(msg);
+    console.log('\x1b[32m', msg);
 }
 
 // 保存文件，文件存在会提醒

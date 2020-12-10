@@ -6,3 +6,4 @@ node_modules
 /api.json
 /swaggerData.json
 /swagger-config.json
+_test

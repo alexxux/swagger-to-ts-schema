@@ -25,6 +25,8 @@ async function generatorApiSchema(props) {
         force, // 是否强制覆盖文件
         debug, // debug模式
         schemaType = "json", // 输出的模式
+        validApiMap = {}, // 实际使用的Api
+        type, // 是否只过滤有效的api
     } = props;
 
     // d.ts模板文件
@@ -90,8 +92,38 @@ async function generatorApiSchema(props) {
             );
         });
 
+
         _info("=== 开始转换 ===");
+        // 构造d.ts文件模板
         const $apiDts = ejs.render(apiDtsTmp, { swaggerData });
+
+        // 只过滤实际使用的api
+        if (type === "valid") {
+            _info(`=== 只过滤实用API ===`);
+            Object.values(swaggerData).forEach(apiGroup => {
+                let namespace = apiGroup.namespace;
+                apiGroup.apis = apiGroup.apis.filter(api => {
+                    let apiKey = `${className}/${namespace}/${api.parentPath}/${api.apiNamex}`;
+                    apiKey = apiKey.replace(/\//g, ".");
+                    if (validApiMap[apiKey]) {
+                        delete validApiMap[apiKey];
+                        return true;
+                    } else {
+                        return false;
+                    }
+                });
+            })
+            let validApiLeave = Object.keys(validApiMap);
+            if (validApiLeave.length) {
+                _error("=== api异常 ===");
+                validApiLeave.forEach(apiName => {
+                    _error(apiName);
+                });
+                _error("=== api异常 end ===");
+                return;
+            }
+        }
+
         const $api = ejs.render(apiTmp, { swaggerData });
         // 检查文件是否存在
         await saveFile(`${output}${fileName}.d.ts`, beautify($apiDts), force);
