@@ -10,7 +10,7 @@ function getApiRegExp(className) {
         let regStr = `\\${key}`;
         className = className.replace(new RegExp(regStr, "g"), regStr);
     })
-    return new RegExp(`${className}(\\.\\w+)*`, "g")
+    return new RegExp(`${className}(\\.\\w+(\\n(\\s|\\t)*)*)+`, "g")
 }
 
 // 过滤并导出有效使用的apiSchema
@@ -32,14 +32,22 @@ async function generatorValidApiSchema(props) {
             //根据文件路径获取文件信息，返回一个fs.Stats对象
             let stats = fs.statSync(filedir);
             if (stats.isFile()) {
+                // d.ts文件不检查
+                if (filedir.endsWith("d.ts")) return;
                 let code = fs.readFileSync(filedir, "utf-8");
+                    // 过滤代码内的空格和tab
+                    code = code.replace(/(\s|\t)+/g, "");
                 // 根据命名空间匹配api
                 let apiFns = code.match(apiFnReg);
                 if (!apiFns) return;
 
                 apiFns.forEach(api => {
                     // util.createObjectByStringKey(api, map)
-                    map[api] = true;
+                    if (map[api]) {
+                        map[api]++
+                    } else {
+                        map[api] = 1;
+                    }
                 })
             } else if (stats.isDirectory()) {
                 return getApiMap(filedir, map);//递归，如果是文件夹，就继续遍历该文件夹下面的文件
@@ -49,6 +57,15 @@ async function generatorValidApiSchema(props) {
     }
 
     const validApiMap = getApiMap(scopeDir);
+    const validApiValues = typeof validApiMap === "object" && Object.values(validApiMap) || [];
+
+    if (!validApiValues.length) return util._error("=== 无有效API ===");
+    let apiCounts = validApiValues.reduce((counts, num) => {
+        counts += num;
+        return counts;
+    }, 0);
+
+    util._info(`=== 已使用API（${validApiValues.length}），引用API次数（${apiCounts}）===`);
     return generatorApiSchema({
         ...props,
         validApiMap
