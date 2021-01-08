@@ -27,6 +27,11 @@ function getApiFromApis(apis) {
             value[2] = value[2] || {};
             value[2].isBodyParameter = 1;
         }
+
+        if (api.isPathParameter) {
+            value[2] = value[2] || {};
+            value[2].isPathParameter = 1;
+        }
     })
     return map;
 }

@@ -330,6 +330,10 @@ const getViewForSwagger = function (opts) {
                 ($api.parameters.length &&
                     $api.parameters.filter((p) => p.isBodyParameter).length === $api.parameters.length) ||
                 false;
+            // api请求参数是否都放在path里
+            $api.isPathParameter = ($api.parameters.length &&
+                $api.parameters.filter((p) => p.isPathParameter).length === $api.parameters.length) ||
+            false;
 
             // 讲api添加进结果
             $swagger.apis.push($api);
