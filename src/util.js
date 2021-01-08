@@ -130,11 +130,24 @@ async function saveFile(filePath, fileData, force) {
     }
 }
 
+// 根据swagger的tag和operationId生成api唯一路径
+function geSwagger2ApiUniquePath(swaggerUrl, tags, operationId) {
+    if (!swaggerUrl || !Array.isArray(tags) || !operationId) return "";
+    const paths = [...tags, operationId];
+
+    return swaggerUrl + "/" + paths.map(path => {
+        return path.toString().replace(/[^a-zA-Z\d]/g, function (e) {
+            return e.charCodeAt(0)
+        });
+    }).join("/");
+}
+
 module.exports = {
     convertType,
     normalizeTypeName,
     createObjectByStringKey,
     _error,
     _info,
-    saveFile
+    saveFile,
+    geSwagger2ApiUniquePath
 };

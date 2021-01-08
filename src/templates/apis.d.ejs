@@ -75,7 +75,7 @@ function loadPathTree(pathObj, templates = []) {
             path.forEach(api => {
 
                 // api描述
-                namespaceTmp.push(`${getSpace(8)}/** ${api.summary} */`);
+                namespaceTmp.push(`${getSpace(8)}/** ${api.summary} ${api.uniquePath}*/`);
 
                 if (api.isBodyParameter) {
                     namespaceTmp.push(`${getSpace(8)}function ${api.apiNamex} (`);

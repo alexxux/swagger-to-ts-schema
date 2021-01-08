@@ -106,22 +106,27 @@ const getViewForSwagger = function (opts) {
     if (!swagger.info) throw new Error("swagger is not exist");
     // 标题
     const namespace = opts.namespace || getSwapperNamespace(swagger.info.title);
-    const result = {
+    const $swagger = {
         namespace,
         description: opts.description || swagger.info.description, // 该接口的描述信息
         // isSecure: swagger.securityDefinitions !== undefined, // 接口的验证信息
         moduleName: opts.moduleName,
         className: opts.className || "$api",
         imports: opts.imports,
-        domain:
-            swagger.schemes && swagger.schemes.length > 0 && swagger.host && swagger.basePath
-                ? swagger.schemes[0] + "://" + swagger.host + swagger.basePath.replace(/\/+$/g, "")
+        domain: swagger.host && swagger.basePath
+                ? (swagger.schemes && swagger.schemes.length ? swagger.schemes[0] : 'http') + "://" + swagger.host + swagger.basePath.replace(/\/+$/g, "")
                 : "", // swagger域名
+        url: '', // swagger路径
         apis: [], // 接口方法
         definitions: [], // 类型定义
         pathGroups: {},
         parentGroups: {},
     };
+
+    // 构造swagger路径
+    if ($swagger.domain) {
+        $swagger.url = $swagger.domain + '/swagger-ui.html#';
+    }
 
     // 接口方法
     const API_NAME_SET = new Set();
@@ -202,6 +207,7 @@ const getViewForSwagger = function (opts) {
                 headers: [],
                 response: "object",
                 group: null,
+                uniquePath: ts.geSwagger2ApiUniquePath($swagger.url, apiOpt.tags, apiOpt.operationId)
             };
 
             // 从接口标签中取得标签信息
@@ -326,18 +332,18 @@ const getViewForSwagger = function (opts) {
                 false;
 
             // 讲api添加进结果
-            result.apis.push($api);
+            $swagger.apis.push($api);
 
             // 根据swagger tag分组
             // if ($api.group) {
-            //     result.apiGroups = result.apiGroups || {};
-            //     result.apiGroups[$api.group] = result.apiGroups[$api.group] || {
+            //     $swagger.apiGroups = $swagger.apiGroups || {};
+            //     $swagger.apiGroups[$api.group] = $swagger.apiGroups[$api.group] || {
             //         description: `${$api.group} ${TAGS_MAP.get($api.group)}`, // 分组描述信息
             //         items: [],
             //     };
 
             //     // api分组
-            //     result.apiGroups[$api.group].items.push($api);
+            //     $swagger.apiGroups[$api.group].items.push($api);
             // }
 
             // 根据服务器路径分组
@@ -349,13 +355,13 @@ const getViewForSwagger = function (opts) {
             //         map[$api.apiNamex] = $api;
             //     }
             //     return map[key];
-            // }, result.pathGroups);
+            // }, $swagger.pathGroups);
         });
     });
 
     // 根据父路径进行分组
-    result.apis.forEach((apiObj) => {
-        let groups = getStrkeyFromObj(result.parentGroups, apiObj.parentPath, "/");
+    $swagger.apis.forEach((apiObj) => {
+        let groups = getStrkeyFromObj($swagger.parentGroups, apiObj.parentPath, "/");
         if (!groups.items) {
             groups.items = [];
         }
@@ -364,14 +370,14 @@ const getViewForSwagger = function (opts) {
 
     // 遍历definitions属性，构造ts的interface
     _.forEach(swagger.definitions, function (definition, name) {
-        result.definitions.push({
+        $swagger.definitions.push({
             name: ts.normalizeTypeName(name), // 名称
             description: definition.description, // 描述信息
             tsType: ts.convertType(definition, swagger), // ts类型
         });
     });
 
-    return result;
+    return $swagger;
 };
 
 module.exports = {
