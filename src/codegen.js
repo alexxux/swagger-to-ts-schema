@@ -19,6 +19,9 @@ const AuthorizedMethods = [
     "PROPFIND",
 ];
 
+// d.ts保留字
+const ReservedWordSet = new Set(["break", "delete", "function", "return", "typeof", "case", "do", "if", "switch", "var", "catch", "else", "in", "this", "void", "continue", "false", "instanceof", "throw", "while", "debugger", "finally", "new", "true", "with", "default", "for", "null", "try", "class", "const", "enum", "export", "extendes", "inport", "super"]);
+
 // 获得驼峰命名
 const getClassName = function (name) {
     name = name.replace(/-Api|-controller|\./gi, "");
@@ -100,6 +103,14 @@ const getStrkeyFromObj = function (obj, strKey = "", separator = ".") {
     });
     return target;
 };
+
+// 格式化路径，防止出现保留字
+const formatPathItem = function (path) {
+    if (ReservedWordSet.has(path)) {
+        return path + '_';
+    }
+    return path;
+}
 
 const getViewForSwagger = function (opts) {
     const swagger = opts.swagger;
@@ -184,6 +195,8 @@ const getViewForSwagger = function (opts) {
             // 获得父路径，根路径为空字符串
             let parentPath = apiPath.replace(/^\//, "").split("/");
             parentPath.pop();
+            // 过滤ts的关键字
+            parentPath = parentPath.map(p => formatPathItem(p));
             parentPath = parentPath.join("/");
 
             // 构造api方法对象
