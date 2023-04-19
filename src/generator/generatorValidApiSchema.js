@@ -35,8 +35,8 @@ async function generatorValidApiSchema(props) {
                 // d.ts文件不检查
                 if (filedir.endsWith("d.ts")) return;
                 let code = fs.readFileSync(filedir, "utf-8");
-                    // 过滤代码内的空格和tab
-                    code = code.replace(/(\s|\t)+/g, "");
+                    // 过滤代码内的tab
+                    code = code.replace(/(\t)+/g, "");
                 // 根据命名空间匹配api
                 let apiFns = code.match(apiFnReg);
                 if (!apiFns) return;
